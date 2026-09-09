@@ -1,0 +1,72 @@
+// Enumerações de Apoio
+Enum fase_titulacao_enum {
+  certificada [note: 'Certificada pela FCP']
+  rtid_publicado [note: 'Relatório Técnico de Identificação e Delimitação']
+  decretada [note: 'Decreto Presidencial']
+  titulada [note: 'Título de Propriedade Concedido']
+}
+
+Enum formato_documento_enum {
+  pdf [note: 'Diagramas e relatórios formatados']
+  pkt [note: 'Arquivos de topologia do Cisco Packet Tracer']
+  md [note: 'Documentação e relatórios em Markdown']
+  outros
+}
+
+// Entidades Principais
+Table municipios {
+  id integer [primary key, increment]
+  nome varchar(100) [not null]
+  uf char(2) [not null]
+  codigo_ibge integer [unique]
+
+  Note: 'Municípios onde as comunidades estão localizadas'
+}
+
+Table comunidades {
+  id integer [primary key, increment]
+  nome varchar(150) [not null]
+  municipio_id integer [ref: > municipios.id]
+  populacao_estimada integer
+  qtd_familias integer
+  certificado_fcp boolean [default: false]
+  data_certificacao date
+  latitude decimal(10,8)
+  longitude decimal(11,8)
+  criado_em timestamp [default: `now()`]
+
+  Note: 'Comunidades Quilombolas mapeadas'
+}
+
+Table territorios {
+  id integer [primary key, increment]
+  comunidade_id integer [ref: > comunidades.id]
+  area_hectares decimal(12,2)
+  fase_titulacao fase_titulacao_enum
+  orgao_responsavel varchar [default: 'INCRA']
+
+  Note: 'Delimitação territorial e dados de regularização fundiária'
+}
+
+Table atividades {
+  id integer [primary key, increment]
+  codigo_atividade varchar(20) [not null, note: 'Ex: atividade-01, miniatividade']
+  titulo varchar(150) [not null]
+  descricao text
+  status varchar(30) [default: 'Em Andamento']
+  data_entrega date
+
+  Note: 'Controle das etapas e atividades do projeto (atividades 01 a 09)'
+}
+
+Table documentos {
+  id integer [primary key, increment]
+  atividade_id integer [ref: > atividades.id]
+  comunidade_id integer [ref: > comunidades.id]
+  nome_arquivo varchar(255) [not null, note: 'Ex: diagrama.pdf, redes.pkt.pkt, relatorio.md']
+  formato formato_documento_enum [not null]
+  caminho_storage text [not null]
+  criado_em timestamp [default: `now()`]
+
+  Note: 'Arquivos anexados, topologias de rede e documentações'
+}
