@@ -40,6 +40,12 @@ A tabela abaixo define o contrato mínimo para o MVP. Banco, backend e frontend 
 - `documentos.atividade_id` referencia `atividades.id`.
 - `documentos.comunidade_id` referencia `comunidades.id`.
 
+### Rotas de consulta do backend
+
+- `GET /comunidades` lista comunidades e aceita `nome`, `municipio_id` e `certificado_fcp` como filtros opcionais.
+- `GET /municipios` lista os municípios cadastrados.
+- `GET /documentos` lista documentos com os nomes da atividade e da comunidade relacionadas.
+
 ### Regras de integridade
 
 - `comunidades.municipio_id`, `latitude` e `longitude` são obrigatórios.

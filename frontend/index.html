@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Portal de Memórias e Mapa Quilombola">
+  <title>PMMQ | Mapa Quilombola</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">Q</div>
+        <div>
+          <strong>PMMQ</strong>
+          <span>Mapa Quilombola</span>
+        </div>
+      </div>
+
+      <div class="sidebar-label">Navegação</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="explorar" type="button"><span class="nav-icon">⌖</span> Explorar mapa</button>
+        <button class="nav-item" data-view="documentos" type="button"><span class="nav-icon">▤</span> Documentos</button>
+      </nav>
+
+      <div class="sidebar-note">
+        <span class="note-dot"></span>
+        <div>
+          <strong>Base demonstrativa</strong>
+          <p>Dados sintéticos para pesquisa e desenvolvimento.</p>
+        </div>
+      </div>
+      <div class="sidebar-footer">Portal de Memórias e Mapa Quilombola<br><span>Versão MVP · 2026</span></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Abrir navegação">☰</button>
+        <div class="breadcrumb"><span>PMMQ</span><b>/</b><strong id="breadcrumb-label">Explorar mapa</strong></div>
+        <div class="topbar-actions">
+          <span class="api-status"><i></i> API conectada</span>
+          <button class="avatar" type="button" aria-label="Perfil">ME</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-explorar">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Território e memória</p>
+            <h1>Comunidades quilombolas</h1>
+            <p class="heading-copy">Explore os territórios mapeados e encontre informações para orientar sua pesquisa.</p>
+          </div>
+          <button class="primary-button" id="open-form" type="button"><span>＋</span> Cadastrar comunidade</button>
+        </div>
+
+        <div class="stats-grid" id="stats-grid" aria-label="Resumo dos dados">
+          <article class="stat-card"><span class="stat-label">Comunidades mapeadas</span><strong id="stat-communities">—</strong><span class="stat-caption">na base atual</span></article>
+          <article class="stat-card accent-green"><span class="stat-label">Certificadas pela FCP</span><strong id="stat-certified">—</strong><span class="stat-caption">com documentação registrada</span></article>
+          <article class="stat-card accent-yellow"><span class="stat-label">Municípios</span><strong id="stat-municipalities">—</strong><span class="stat-caption">com comunidades mapeadas</span></article>
+          <article class="stat-card accent-red"><span class="stat-label">Famílias estimadas</span><strong id="stat-families">—</strong><span class="stat-caption">nos registros disponíveis</span></article>
+        </div>
+
+        <div class="explore-grid">
+          <section class="map-card panel">
+            <div class="panel-header">
+              <div><h2>Mapa de comunidades</h2><p>Distribuição territorial dos registros</p></div>
+              <span class="map-count" id="map-count">0 pontos</span>
+            </div>
+            <div class="map-canvas" id="map-canvas">
+              <div class="map-water water-one"></div><div class="map-water water-two"></div>
+              <div class="map-road road-one"></div><div class="map-road road-two"></div><div class="map-road road-three"></div>
+              <div class="map-label label-one">Maranhão · zona demonstrativa</div>
+              <div class="map-label label-two">Territórios quilombolas</div>
+              <div id="map-markers"></div>
+              <div class="map-legend"><span><i class="legend-dot certified"></i> Certificada</span><span><i class="legend-dot pending"></i> Em registro</span></div>
+            </div>
+          </section>
+
+          <section class="results-card panel">
+            <div class="panel-header results-heading"><div><h2>Comunidades</h2><p id="results-caption">Carregando registros...</p></div><button class="icon-button" id="clear-filters" type="button" title="Limpar filtros">↺</button></div>
+            <div class="filter-stack">
+              <label class="search-field"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar por nome..." autocomplete="off"></label>
+              <div class="filter-row"><select id="municipality-filter" aria-label="Filtrar por município"><option value="">Todos os municípios</option></select><select id="certification-filter" aria-label="Filtrar por certificação"><option value="">Todas as situações</option><option value="true">Certificadas</option><option value="false">Em registro</option></select></div>
+            </div>
+            <div class="community-list" id="community-list" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-documentos">
+        <div class="page-heading compact-heading"><div><p class="eyebrow">Acervo do projeto</p><h1>Documentos</h1><p class="heading-copy">Arquivos relacionados às atividades e comunidades da base demonstrativa.</p></div></div>
+        <section class="panel document-panel"><div class="panel-header"><div><h2>Arquivos registrados</h2><p>Relações vindas diretamente do banco SQLite</p></div><span class="map-count" id="document-count">0 arquivos</span></div><div class="document-table-wrap"><table><thead><tr><th>Arquivo</th><th>Atividade</th><th>Comunidade</th><th>Formato</th><th>Localização</th></tr></thead><tbody id="document-list"></tbody></table></div></section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="form-modal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="form-title">
+      <div class="modal-header"><div><p class="eyebrow">Novo registro</p><h2 id="form-title">Cadastrar comunidade</h2></div><button class="close-button" id="close-form" type="button" aria-label="Fechar">×</button></div>
+      <form id="community-form">
+        <div class="form-grid"><label>Nome da comunidade<input name="nome" required maxlength="150" placeholder="Ex.: Quilombo Esperança"></label><label>Município<select name="municipio_id" id="form-municipality" required><option value="">Selecione</option></select></label><label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required placeholder="-3.1254321"></label><label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="-44.2187654"></label><label>Famílias estimadas<input name="qtd_familias" type="number" min="0" step="1" placeholder="Opcional"></label><label>População estimada<input name="populacao_estimada" type="number" min="0" step="1" placeholder="Opcional"></label></div>
+        <label class="check-field"><input name="certificado_fcp" id="form-certified" type="checkbox"><span>Comunidade certificada pela Fundação Cultural Palmares</span></label>
+        <label id="certification-date-field" class="date-field" hidden>Data da certificação<input name="data_certificacao" type="date"></label>
+        <p class="form-feedback" id="form-feedback" role="alert"></p>
+        <div class="modal-actions"><button class="secondary-button" id="cancel-form" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar comunidade</button></div>
+      </form>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
