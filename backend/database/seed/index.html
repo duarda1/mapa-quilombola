@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa de Memórias Quilombolas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { display: flex; font-family: Arial, sans-serif; margin: 0; height: 100vh; }
+    #form-container { width: 320px; padding: 20px; background: #f8f9fa; border-right: 1px solid #ccc; z-index: 1000; box-sizing: border-box; }
+    #map { flex: 1; height: 100%; z-index: 1; }
+    input, textarea, button { width: 100%; margin-bottom: 12px; padding: 8px; box-sizing: border-box; }
+    button { background-color: #2e7d32; color: white; border: none; font-weight: bold; cursor: pointer; padding: 10px; }
+    button:hover { background-color: #1b5e20; }
+    .hint { font-size: 0.85em; color: #555; background: #e8f5e9; padding: 8px; border-radius: 4px; margin-bottom: 12px; word-wrap: break-word; }
+  </style>
+</head>
+<body>
+
+<div id="form-container">
+  <div id="hint-box" class="hint">🔴 <b>Clique no mapa</b> para selecionar a coordenada e preencher a localidade automaticamente.</div>
+  
+  <form id="memoriaForm">
+    <input type="text" id="titulo" placeholder="Título (ex: Casa de Farinha)" required>
+    <input type="text" id="comunidade" placeholder="Comunidade / Localidade" required>
+    <textarea id="descricao" placeholder="Descrição ou história..."></textarea>
+    <button type="submit">Cadastrar no Mapa</button>
+  </form>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([-2.4042, -44.4158], 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  let selectedLat = null;
+  let selectedLng = null;
+  let tempMarker = null;
+
+  const redIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  const greenIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  // Captura do clique no mapa e geocodificação reversa
+  map.on('click', async (e) => {
+    selectedLat = e.latlng.lat;
+    selectedLng = e.latlng.lng;
+
+    const hintBox = document.getElementById('hint-box');
+    hintBox.innerHTML = "🔍 <i>Buscando informações do local...</i>";
+
+    if (tempMarker) map.removeLayer(tempMarker);
+
+    tempMarker = L.marker([selectedLat, selectedLng], { icon: redIcon }).addTo(map)
+      .bindPopup("🔍 <i>Buscando endereço...</i>").openPopup();
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${selectedLat}&lon=${selectedLng}`);
+      const data = await res.json();
+      
+      const enderecoCompleto = data.display_name || "Local sem endereço registrado";
+      const addr = data.address || {};
+      const localidade = addr.village || addr.town || addr.city || addr.suburb || addr.municipality || addr.county || "";
+
+      hintBox.innerHTML = `📍 <b>Local selecionado:</b><br>${enderecoCompleto}`;
+      if (localidade) {
+        document.getElementById('comunidade').value = localidade;
+      }
+
+      tempMarker.setPopupContent(`
+        <b>📍 Ponto Selecionado</b><br>
+        <small>${localidade || enderecoCompleto}</small>
+      `);
+    } catch (err) {
+      hintBox.innerHTML = "📍 <b>Ponto Selecionado!</b> Preencha os campos abaixo.";
+      tempMarker.setPopupContent("<b>📍 Ponto Selecionado</b>");
+    }
+  });
+
+  // Busca e exibe marcadores persistidos
+  async function carregarPontos() {
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/memorias');
+      const dados = await res.json();
+      dados.forEach(p => {
+        L.marker([p.latitude, p.longitude], { icon: greenIcon }).addTo(map)
+         .bindPopup(`<b>${p.titulo}</b><br><i>${p.comunidade}</i><br><p>${p.descricao}</p>`);
+      });
+    } catch (err) {
+      console.error("Erro ao conectar com o backend:", err);
+    }
+  }
+
+  // Envio de novo registro via POST
+  document.getElementById('memoriaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!selectedLat || !selectedLng) {
+      alert("Por favor, clique em um ponto no mapa primeiro!");
+      return;
+    }
+
+    const payload = {
+      titulo: document.getElementById('titulo').value,
+      comunidade: document.getElementById('comunidade').value,
+      descricao: document.getElementById('descricao').value,
+      latitude: selectedLat,
+      longitude: selectedLng
+    };
+
+    await fetch('http://127.0.0.1:8000/api/memorias', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    document.getElementById('memoriaForm').reset();
+    location.reload();
+  });
+
+  carregarPontos();
+</script>
+</body>
+</html>
