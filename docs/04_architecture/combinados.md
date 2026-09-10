@@ -40,4 +40,12 @@ A tabela abaixo define o contrato mínimo para o MVP. Banco, backend e frontend 
 - `documentos.atividade_id` referencia `atividades.id`.
 - `documentos.comunidade_id` referencia `comunidades.id`.
 
+### Regras de integridade
+
+- `comunidades.municipio_id`, `latitude` e `longitude` são obrigatórios.
+- Não pode existir mais de uma comunidade com o mesmo `nome` no mesmo `municipio_id`.
+- `comunidades.latitude` deve estar entre -90 e 90; `longitude` deve estar entre -180 e 180. A validação deve ser feita pelo backend até que exista uma restrição equivalente no banco.
+- `territorios.comunidade_id` é obrigatório.
+- `certificado_fcp` representa a certificação pela Fundação Cultural Palmares; `fase_titulacao` representa a regularização territorial e não deve ser usado como sinônimo.
+
 > O dicionário da miniatividade usa nomes como `nome_comunidade`, `id_comunidade` e `certificada`. Para a implementação compartilhada, estes nomes devem ser traduzidos para os nomes do schema acima, sem criar campos duplicados.

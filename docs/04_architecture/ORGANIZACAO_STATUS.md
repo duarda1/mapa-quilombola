@@ -13,6 +13,7 @@
 
 - O MVP prioriza consulta e cadastro de comunidades.
 - Os nomes do `database/schema.dbml` são a referência para o contrato entre as partes.
+- O schema exige município e coordenadas no cadastro, evita duplicidade por nome e município e separa certificação FCP de titulação territorial.
 - A consulta deve funcionar por mapa ou lista, permitindo demonstrar o fluxo mesmo que a integração cartográfica ainda não esteja pronta.
 - Relatos, mídias, autenticação, moderação, exportação e painel administrativo completo ficam para depois.
 - `nome`, `municipio_id` e `certificado_fcp` serão usados no lugar de `nome_comunidade`, `municipio` e `certificada` na implementação.

@@ -1,6 +1,5 @@
 // Enumerações de Apoio
 Enum fase_titulacao_enum {
-  certificada [note: 'Certificada pela FCP']
   rtid_publicado [note: 'Relatório Técnico de Identificação e Delimitação']
   decretada [note: 'Decreto Presidencial']
   titulada [note: 'Título de Propriedade Concedido']
@@ -26,21 +25,25 @@ Table municipios {
 Table comunidades {
   id integer [primary key, increment]
   nome varchar(150) [not null]
-  municipio_id integer [ref: > municipios.id]
+  municipio_id integer [not null, ref: > municipios.id]
   populacao_estimada integer
   qtd_familias integer
-  certificado_fcp boolean [default: false]
+  certificado_fcp boolean [not null, default: false]
   data_certificacao date
-  latitude decimal(10,8)
-  longitude decimal(11,8)
+  latitude decimal(10,8) [not null]
+  longitude decimal(11,8) [not null]
   criado_em timestamp [default: `now()`]
 
   Note: 'Comunidades Quilombolas mapeadas'
+
+  Indexes {
+    (nome, municipio_id) [unique, name: 'uq_comunidades_nome_municipio']
+  }
 }
 
 Table territorios {
   id integer [primary key, increment]
-  comunidade_id integer [ref: > comunidades.id]
+  comunidade_id integer [not null, ref: > comunidades.id]
   area_hectares decimal(12,2)
   fase_titulacao fase_titulacao_enum
   orgao_responsavel varchar [default: 'INCRA']
