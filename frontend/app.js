@@ -81,13 +81,19 @@ function renderCommunities() {
   renderMap();
 }
 
-function selectCommunity(id) {
+async function selectCommunity(id) {
   state.selectedId = id;
   const community = state.communities.find((item) => item.id === id);
   if (!community) return;
   renderCommunities();
-  const territoryText = community.territorio ? `Área territorial: ${community.territorio.area_hectares || 'não informada'} ha · fase ${community.territorio.fase_titulacao || 'não informada'}` : 'Dados territoriais ainda não registrados.';
-  showToast(`${community.nome} · ${territoryText}`);
+  try {
+    const details = await api(`/comunidades/${id}`);
+    const territory = details.territorios?.[0];
+    const territoryText = territory ? `Área territorial: ${territory.area_hectares || 'não informada'} ha · fase ${territory.fase_titulacao || 'não informada'}` : 'Dados territoriais ainda não registrados.';
+    showToast(`${details.nome} · ${territoryText}`);
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 async function loadCommunities() {

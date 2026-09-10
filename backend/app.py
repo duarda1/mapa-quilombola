@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import math
 import sqlite3
+from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
+from typing import Iterator
 
 from flask import Flask, jsonify, request, send_from_directory
 
@@ -18,12 +22,25 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
     )
     app.config["DATABASE_PATH"] = database_path
 
+    @contextmanager
+    def database_connection() -> Iterator[sqlite3.Connection]:
+        connection = sqlite3.connect(app.config["DATABASE_PATH"])
+        connection.execute("PRAGMA foreign_keys = ON")
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     @app.get("/")
     def index():
         return send_from_directory(ROOT / "frontend", "index.html")
 
     def query_database(query: str, parameters: tuple = ()) -> list[dict]:
-        with sqlite3.connect(app.config["DATABASE_PATH"]) as connection:
+        with database_connection() as connection:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(query, parameters).fetchall()
             return [dict(row) for row in rows]
@@ -32,6 +49,11 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
     def health() -> tuple:
         if not app.config["DATABASE_PATH"].exists():
             return jsonify({"status": "error", "message": "Banco SQLite nao encontrado"}), 503
+        try:
+            with database_connection() as connection:
+                connection.execute("SELECT 1 FROM comunidades LIMIT 1").fetchone()
+        except sqlite3.Error:
+            return jsonify({"status": "error", "message": "Banco SQLite indisponivel"}), 503
         return jsonify({"status": "ok"})
 
     @app.get("/comunidades")
@@ -89,14 +111,45 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
         if missing_fields:
             return jsonify({"erro": "Campos obrigatorios ausentes", "campos": missing_fields}), 400
 
+        if not isinstance(data["nome"], str) or not data["nome"].strip():
+            return jsonify({"erro": "nome deve ser um texto nao vazio"}), 400
+
         try:
+            if isinstance(data["municipio_id"], bool):
+                raise ValueError
             municipality_id = int(data["municipio_id"])
+            if str(data["municipio_id"]) != str(municipality_id):
+                raise ValueError
             latitude = float(data["latitude"])
             longitude = float(data["longitude"])
         except (TypeError, ValueError):
             return jsonify({"erro": "municipio_id, latitude e longitude devem ser numericos"}), 400
 
-        if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
+        optional_integer_fields = ("qtd_familias", "populacao_estimada")
+        optional_integers: dict[str, int | None] = {}
+        for field in optional_integer_fields:
+            value = data.get(field)
+            if value is None or value == "":
+                optional_integers[field] = None
+                continue
+            if isinstance(value, bool):
+                return jsonify({"erro": f"{field} deve ser um inteiro positivo"}), 400
+            try:
+                integer_value = int(value)
+            except (TypeError, ValueError):
+                return jsonify({"erro": f"{field} deve ser um inteiro positivo"}), 400
+            if str(value) != str(integer_value):
+                return jsonify({"erro": f"{field} deve ser um inteiro positivo"}), 400
+            if integer_value < 0:
+                return jsonify({"erro": f"{field} deve ser um inteiro positivo"}), 400
+            optional_integers[field] = integer_value
+
+        if (
+            not math.isfinite(latitude)
+            or not math.isfinite(longitude)
+            or not -90 <= latitude <= 90
+            or not -180 <= longitude <= 180
+        ):
             return jsonify({"erro": "Coordenadas fora dos limites validos"}), 400
 
         certified = data["certificado_fcp"]
@@ -104,14 +157,18 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
             return jsonify({"erro": "certificado_fcp deve ser booleano"}), 400
 
         certification_date = data.get("data_certificacao")
+        if certification_date:
+            try:
+                date.fromisoformat(certification_date)
+            except (TypeError, ValueError):
+                return jsonify({"erro": "data_certificacao deve estar no formato AAAA-MM-DD"}), 400
         if certified and not certification_date:
             return jsonify({"erro": "data_certificacao e obrigatoria para comunidades certificadas"}), 400
         if not certified and certification_date:
             return jsonify({"erro": "data_certificacao so pode ser informada para comunidades certificadas"}), 400
 
         try:
-            with sqlite3.connect(app.config["DATABASE_PATH"]) as connection:
-                connection.execute("PRAGMA foreign_keys = ON")
+            with database_connection() as connection:
                 cursor = connection.execute(
                     """INSERT INTO comunidades (
                         nome, municipio_id, populacao_estimada, qtd_familias,
@@ -119,7 +176,7 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         data["nome"].strip(), municipality_id,
-                        data.get("populacao_estimada"), data.get("qtd_familias"),
+                        optional_integers["populacao_estimada"], optional_integers["qtd_familias"],
                         int(certified), certification_date, latitude, longitude,
                     ),
                 )
@@ -131,6 +188,40 @@ def create_app(database_path: Path = DATABASE_PATH) -> Flask:
             return jsonify({"erro": message}), 409
 
         return jsonify({"id": community_id, "mensagem": "Comunidade cadastrada com sucesso"}), 201
+
+    @app.get("/comunidades/<int:community_id>")
+    def get_community(community_id: int) -> tuple:
+        with database_connection() as connection:
+            connection.row_factory = sqlite3.Row
+            community = connection.execute(
+                """
+                SELECT
+                    c.id, c.nome, c.municipio_id, m.nome AS municipio,
+                    m.uf, c.populacao_estimada, c.qtd_familias,
+                    c.certificado_fcp, c.data_certificacao,
+                    c.latitude, c.longitude, c.criado_em
+                FROM comunidades c
+                INNER JOIN municipios m ON m.id = c.municipio_id
+                WHERE c.id = ?
+                """,
+                (community_id,),
+            ).fetchone()
+            if community is None:
+                return jsonify({"erro": "Comunidade nao encontrada"}), 404
+            territories = connection.execute(
+                """
+                SELECT id, area_hectares, fase_titulacao, orgao_responsavel
+                FROM territorios
+                WHERE comunidade_id = ?
+                ORDER BY id
+                """,
+                (community_id,),
+            ).fetchall()
+
+        result = dict(community)
+        result["certificado_fcp"] = bool(result["certificado_fcp"])
+        result["territorios"] = [dict(territory) for territory in territories]
+        return jsonify(result)
 
     @app.get("/municipios")
     def list_municipalities() -> tuple:

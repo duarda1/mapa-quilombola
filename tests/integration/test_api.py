@@ -19,6 +19,7 @@ class ApiTestCase(unittest.TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Comunidades quilombolas", response.data)
+        response.close()
 
     def test_list_communities(self):
         response = self.client.get("/comunidades")
@@ -29,6 +30,15 @@ class ApiTestCase(unittest.TestCase):
         response = self.client.get("/comunidades?municipio_id=1&certificado_fcp=true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual([item["nome"] for item in response.get_json()], ["Quilombo Aurora"])
+
+    def test_community_details_include_territories(self):
+        response = self.client.get("/comunidades/1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["territorios"][0]["fase_titulacao"], "titulada")
+
+    def test_missing_community_returns_not_found(self):
+        response = self.client.get("/comunidades/999")
+        self.assertEqual(response.status_code, 404)
 
     def test_list_municipalities(self):
         response = self.client.get("/municipios")
@@ -45,20 +55,90 @@ class ApiTestCase(unittest.TestCase):
         with TemporaryDirectory() as directory:
             temporary_database = Path(directory) / "test.db"
             copyfile(database_path, temporary_database)
-            client = create_app(temporary_database).test_client()
-            response = client.post(
+            with create_app(temporary_database).test_client() as client:
+                response = client.post(
+                    "/comunidades",
+                    json={
+                        "nome": "Quilombo Teste da API",
+                        "municipio_id": 3,
+                        "latitude": -3.9,
+                        "longitude": -44.7,
+                        "qtd_familias": 12,
+                        "certificado_fcp": False,
+                    },
+                )
+                self.assertEqual(response.status_code, 201)
+                self.assertEqual(len(client.get("/comunidades").get_json()), 6)
+
+    def test_reject_invalid_coordinates(self):
+        database_path = Path("database/mapa_quilombola.db")
+        with TemporaryDirectory() as directory:
+            temporary_database = Path(directory) / "test.db"
+            copyfile(database_path, temporary_database)
+            with create_app(temporary_database).test_client() as client:
+                response = client.post(
+                    "/comunidades",
+                    json={
+                        "nome": "Quilombo Coordenada Invalida",
+                        "municipio_id": 3,
+                        "latitude": 95,
+                        "longitude": -44,
+                        "certificado_fcp": False,
+                    },
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_reject_invalid_name_and_optional_number(self):
+        responses = (
+            self.client.post(
                 "/comunidades",
                 json={
-                    "nome": "Quilombo Teste da API",
+                    "nome": "",
                     "municipio_id": 3,
                     "latitude": -3.9,
                     "longitude": -44.7,
-                    "qtd_familias": 12,
                     "certificado_fcp": False,
                 },
-            )
-            self.assertEqual(response.status_code, 201)
-            self.assertEqual(len(client.get("/comunidades").get_json()), 6)
+            ),
+            self.client.post(
+                "/comunidades",
+                json={
+                    "nome": "Quilombo Numero Invalido",
+                    "municipio_id": 3,
+                    "latitude": -3.9,
+                    "longitude": -44.7,
+                    "qtd_familias": -1,
+                    "certificado_fcp": False,
+                },
+            ),
+        )
+        self.assertEqual([response.status_code for response in responses], [400, 400])
+
+    def test_reject_fractional_integer_and_invalid_date(self):
+        responses = (
+            self.client.post(
+                "/comunidades",
+                json={
+                    "nome": "Quilombo Municipio Fracionado",
+                    "municipio_id": 3.5,
+                    "latitude": -3.9,
+                    "longitude": -44.7,
+                    "certificado_fcp": False,
+                },
+            ),
+            self.client.post(
+                "/comunidades",
+                json={
+                    "nome": "Quilombo Data Invalida",
+                    "municipio_id": 3,
+                    "latitude": -3.9,
+                    "longitude": -44.7,
+                    "certificado_fcp": True,
+                    "data_certificacao": "10/09/2026",
+                },
+            ),
+        )
+        self.assertEqual([response.status_code for response in responses], [400, 400])
 
 
 if __name__ == "__main__":
