@@ -1,0 +1,107 @@
+{
+  "version": "3.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "relationshipMode": "All",
+    "tablePositions": [
+      {
+        "name": "municipios",
+        "schemaName": "public",
+        "x": 12,
+        "y": 12
+      },
+      {
+        "name": "comunidades",
+        "schemaName": "public",
+        "x": 550.47509765625,
+        "y": 12
+      },
+      {
+        "name": "territorios",
+        "schemaName": "public",
+        "x": 1045.21875,
+        "y": 12
+      },
+      {
+        "name": "atividades",
+        "schemaName": "public",
+        "x": 12,
+        "y": 218
+      },
+      {
+        "name": "documentos",
+        "schemaName": "public",
+        "x": 1045.21875,
+        "y": 250
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": [
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "municipios",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "municipio_id"
+        ],
+        "secondTableName": "comunidades",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "comunidades",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "comunidade_id"
+        ],
+        "secondTableName": "territorios",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "atividades",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "atividade_id"
+        ],
+        "secondTableName": "documentos",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "comunidades",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "comunidade_id"
+        ],
+        "secondTableName": "documentos",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      }
+    ]
+  },
+  "views": {}
+}
