@@ -25,6 +25,13 @@ O PMMQ organiza informações de comunidades quilombolas em um sistema web consu
 
 ## Estado atual
 
-A estrutura documental e o schema inicial estão preparados. As áreas de frontend, backend, dados e testes aguardam suas primeiras implementações.
+O MVP está integrado e demonstrável: frontend servido pelo Flask, API conectada ao SQLite, dados sintéticos carregados, mapa Leaflet, filtros, detalhes, documentos e cadastro de comunidades.
+
+Validação atual:
+
+- 12 testes de integração passando;
+- rotas principais respondendo;
+- banco SQLite com seed sintético;
+- frontend consumindo a API sem acesso direto ao banco.
 
 Antes de criar uma nova funcionalidade, confira os nomes definidos em `docs/04_architecture/combinados.md` e atualize `EQUIPE_STATUS.md`.

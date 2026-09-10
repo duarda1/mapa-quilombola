@@ -3,6 +3,10 @@ const state = {
   municipalities: [],
   documents: [],
   selectedId: null,
+  map: null,
+  markers: null,
+  draftMarker: null,
+  tileWarningShown: false,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -15,10 +19,6 @@ const api = async (path, options = {}) => {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('pt-BR').format(value || 0);
-}
-
-function municipalityName(id) {
-  return state.municipalities.find((item) => item.id === id)?.nome || 'Município não informado';
 }
 
 function updateStats() {
@@ -37,27 +37,59 @@ function renderMunicipalityFilters() {
 }
 
 function renderMap() {
-  const target = $('#map-markers');
-  target.innerHTML = '';
+  if (!state.map || !state.markers) return;
+  state.markers.clearLayers();
   if (!state.communities.length) return;
-  const latitudes = state.communities.map((item) => item.latitude);
-  const longitudes = state.communities.map((item) => item.longitude);
-  const latMin = Math.min(...latitudes) - 0.12;
-  const latMax = Math.max(...latitudes) + 0.12;
-  const lonMin = Math.min(...longitudes) - 0.12;
-  const lonMax = Math.max(...longitudes) + 0.12;
   state.communities.forEach((community) => {
-    const left = 13 + ((community.longitude - lonMin) / (lonMax - lonMin)) * 74;
-    const top = 12 + (1 - (community.latitude - latMin) / (latMax - latMin)) * 72;
-    const marker = document.createElement('div');
-    marker.className = `map-marker ${community.certificado_fcp ? 'certified' : ''} ${state.selectedId === community.id ? 'selected' : ''}`;
-    marker.style.left = `${left}%`;
-    marker.style.top = `${top}%`;
-    marker.innerHTML = `<button type="button" aria-label="Ver ${community.nome}"></button>`;
-    marker.addEventListener('click', () => selectCommunity(community.id));
-    target.appendChild(marker);
+    const marker = L.circleMarker([community.latitude, community.longitude], {
+      radius: 8,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: community.certificado_fcp ? '#2f6f59' : '#d9a548',
+      fillOpacity: 0.95,
+    });
+    marker.bindPopup(`<strong>${community.nome}</strong><br><span>${community.municipio} · ${community.qtd_familias ?? '—'} fam.</span><br><small>${community.certificado_fcp ? 'Certificada FCP' : 'Em registro'}</small><br><button type="button" class="popup-more" data-community-id="${community.id}">Ver +</button>`, {
+      closeButton: true,
+      autoClose: true,
+      className: 'community-popup',
+    });
+    marker.addTo(state.markers);
   });
+  const bounds = L.latLngBounds(state.communities.map((community) => [community.latitude, community.longitude]));
+  state.map.fitBounds(bounds.pad(0.22), { maxZoom: 10, animate: false });
   $('#map-count').textContent = `${state.communities.length} ponto${state.communities.length === 1 ? '' : 's'}`;
+}
+
+function initializeMap() {
+  state.map = L.map('map').setView([-3.4, -44.35], 8);
+  const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(state.map);
+  tiles.on('tileerror', () => {
+    if (!state.tileWarningShown) {
+      state.tileWarningShown = true;
+      $('#map-notice').hidden = false;
+    }
+  });
+  state.markers = L.layerGroup().addTo(state.map);
+  state.map.on('popupopen', (event) => {
+    const moreButton = event.popup.getElement()?.querySelector('.popup-more');
+    if (moreButton) {
+      moreButton.addEventListener('click', () => {
+        event.popup.close();
+        selectCommunity(Number(moreButton.dataset.communityId));
+      });
+    }
+  });
+  state.map.on('click', (event) => {
+    const { lat, lng } = event.latlng;
+    $('[name="latitude"]').value = lat.toFixed(7);
+    $('[name="longitude"]').value = lng.toFixed(7);
+    if (state.draftMarker) state.map.removeLayer(state.draftMarker);
+    state.draftMarker = L.marker([lat, lng]).addTo(state.map).bindPopup('Ponto selecionado para cadastro').openPopup();
+    toggleForm(true);
+    showToast('Coordenadas preenchidas a partir do mapa.');
+  });
 }
 
 function renderCommunities() {
@@ -88,12 +120,30 @@ async function selectCommunity(id) {
   renderCommunities();
   try {
     const details = await api(`/comunidades/${id}`);
+    renderCommunityDetails(details);
     const territory = details.territorios?.[0];
     const territoryText = territory ? `Área territorial: ${territory.area_hectares || 'não informada'} ha · fase ${territory.fase_titulacao || 'não informada'}` : 'Dados territoriais ainda não registrados.';
     showToast(`${details.nome} · ${territoryText}`);
   } catch (error) {
     showToast(error.message);
   }
+}
+
+function renderCommunityDetails(details) {
+  const territory = details.territorios?.[0];
+  const certification = details.certificado_fcp
+    ? `Certificada${details.data_certificacao ? ` em ${details.data_certificacao}` : ''}`
+    : 'Em registro';
+  const territoryText = territory
+    ? `Território: ${territory.area_hectares ?? 'Área não informada'} ha · fase ${territory.fase_titulacao || 'Fase não informada'} · órgão ${territory.orgao_responsavel || 'Não informado'}.`
+    : 'Nenhum dado territorial registrado.';
+  const content = `<div class="detail-grid"><div class="detail-item"><span>Município</span><strong>${details.municipio} - ${details.uf}</strong></div><div class="detail-item"><span>Famílias</span><strong>${details.qtd_familias ?? 'Não informadas'}</strong></div><div class="detail-item"><span>População estimada</span><strong>${details.populacao_estimada ?? 'Não informada'}</strong></div><div class="detail-item"><span>Coordenadas</span><strong>${details.latitude}, ${details.longitude}</strong></div></div><p class="detail-territory">${territoryText}</p>`;
+  const panel = $('#community-details');
+  panel.innerHTML = `<div class="detail-heading"><div><p class="eyebrow">Detalhes da comunidade</p><h2>${details.nome}</h2></div><span class="map-count">${certification}</span></div>${content}`;
+  panel.hidden = false;
+  $('#community-modal-title').textContent = details.nome;
+  $('#community-modal-content').innerHTML = `<div class="detail-heading"><span class="map-count">${certification}</span></div>${content}`;
+  $('#community-modal').hidden = false;
 }
 
 async function loadCommunities() {
@@ -160,6 +210,7 @@ function switchView(viewName) {
 
 async function init() {
   try {
+    initializeMap();
     const [municipalities, documents] = await Promise.all([api('/municipios'), api('/documentos')]);
     state.municipalities = municipalities;
     state.documents = documents;
@@ -182,6 +233,8 @@ $('#cancel-form').addEventListener('click', () => toggleForm(false));
 $('#community-form').addEventListener('submit', submitForm);
 $('#form-certified').addEventListener('change', (event) => { $('#certification-date-field').hidden = !event.target.checked; });
 $('#form-modal').addEventListener('click', (event) => { if (event.target.id === 'form-modal') toggleForm(false); });
+$('#close-community-modal').addEventListener('click', () => { $('#community-modal').hidden = true; });
+$('#community-modal').addEventListener('click', (event) => { if (event.target.id === 'community-modal') $('#community-modal').hidden = true; });
 $('#mobile-menu').addEventListener('click', () => $('.sidebar').classList.toggle('open'));
 document.querySelectorAll('.nav-item').forEach((item) => item.addEventListener('click', () => { switchView(item.dataset.view); $('.sidebar').classList.remove('open'); }));
 

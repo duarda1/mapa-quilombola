@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Portal de Memórias e Mapa Quilombola">
   <title>PMMQ | Mapa Quilombola</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
@@ -68,11 +69,8 @@
               <span class="map-count" id="map-count">0 pontos</span>
             </div>
             <div class="map-canvas" id="map-canvas">
-              <div class="map-water water-one"></div><div class="map-water water-two"></div>
-              <div class="map-road road-one"></div><div class="map-road road-two"></div><div class="map-road road-three"></div>
-              <div class="map-label label-one">Maranhão · zona demonstrativa</div>
-              <div class="map-label label-two">Territórios quilombolas</div>
-              <div id="map-markers"></div>
+              <div id="map"></div>
+              <div class="map-notice" id="map-notice" hidden>Base cartográfica indisponível. Os pontos continuam disponíveis.</div>
               <div class="map-legend"><span><i class="legend-dot certified"></i> Certificada</span><span><i class="legend-dot pending"></i> Em registro</span></div>
             </div>
           </section>
@@ -86,6 +84,7 @@
             <div class="community-list" id="community-list" aria-live="polite"></div>
           </section>
         </div>
+        <section class="community-details panel" id="community-details" hidden aria-live="polite"></section>
       </section>
 
       <section class="view" id="view-documentos">
@@ -107,7 +106,14 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop community-modal-backdrop" id="community-modal" hidden>
+    <section class="modal community-modal" role="dialog" aria-modal="true" aria-labelledby="community-modal-title">
+      <div class="modal-header"><div><p class="eyebrow">Consulta rápida</p><h2 id="community-modal-title">Detalhes da comunidade</h2></div><button class="close-button" id="close-community-modal" type="button" aria-label="Fechar detalhes">×</button></div>
+      <div id="community-modal-content"></div>
+    </section>
+  </div>
   <div class="toast" id="toast" role="status"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/assets/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "alexcvzz.vscode-sqlite",
+    "hediet.vscode-drawio",
+    "jebbs.plantuml",
+    "rangav.vscode-thunder-client",
+    "eamodio.gitlens",
+    "esbenp.prettier-vscode"
+  ]
+}
