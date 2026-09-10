@@ -1,0 +1,28 @@
+{
+  "municipios": [
+    { "id": 1, "nome": "Serra das Palmeiras", "uf": "MA", "codigo_ibge": 9900001 },
+    { "id": 2, "nome": "Vale do Sol", "uf": "MA", "codigo_ibge": 9900002 },
+    { "id": 3, "nome": "Rio das Pedras", "uf": "MA", "codigo_ibge": 9900003 }
+  ],
+  "comunidades": [
+    { "id": 1, "nome": "Quilombo Aurora", "municipio_id": 1, "populacao_estimada": 420, "qtd_familias": 118, "certificado_fcp": true, "data_certificacao": "2022-05-14", "latitude": -3.1254321, "longitude": -44.2187654, "criado_em": "2026-09-10T09:00:00Z" },
+    { "id": 2, "nome": "Quilombo Boa Esperanca", "municipio_id": 1, "populacao_estimada": 185, "qtd_familias": 47, "certificado_fcp": false, "data_certificacao": null, "latitude": -3.2845123, "longitude": -44.1067892, "criado_em": "2026-09-10T09:05:00Z" },
+    { "id": 3, "nome": "Quilombo Lagoa Clara", "municipio_id": 2, "populacao_estimada": 760, "qtd_familias": 206, "certificado_fcp": true, "data_certificacao": "2023-11-02", "latitude": -3.5123456, "longitude": -44.4876543, "criado_em": "2026-09-10T09:10:00Z" },
+    { "id": 4, "nome": "Quilombo Novo Horizonte", "municipio_id": 2, "populacao_estimada": null, "qtd_familias": 31, "certificado_fcp": false, "data_certificacao": null, "latitude": -3.6789012, "longitude": -44.356789, "criado_em": "2026-09-10T09:15:00Z" },
+    { "id": 5, "nome": "Quilombo Raizes do Rio", "municipio_id": 3, "populacao_estimada": 96, "qtd_familias": null, "certificado_fcp": false, "data_certificacao": null, "latitude": -3.8012345, "longitude": -44.6123456, "criado_em": "2026-09-10T09:20:00Z" }
+  ],
+  "territorios": [
+    { "id": 1, "comunidade_id": 1, "area_hectares": 1840.5, "fase_titulacao": "titulada", "orgao_responsavel": "INCRA" },
+    { "id": 2, "comunidade_id": 2, "area_hectares": 620.0, "fase_titulacao": "rtid_publicado", "orgao_responsavel": "INCRA" },
+    { "id": 3, "comunidade_id": 3, "area_hectares": 3125.75, "fase_titulacao": "decretada", "orgao_responsavel": "INCRA" },
+    { "id": 4, "comunidade_id": 5, "area_hectares": null, "fase_titulacao": null, "orgao_responsavel": "INCRA" }
+  ],
+  "atividades": [
+    { "id": 1, "codigo_atividade": "atividade-01", "titulo": "Organizacao do projeto", "descricao": "Documentacao inicial e definicao do MVP.", "status": "Concluida", "data_entrega": "2026-09-10" },
+    { "id": 2, "codigo_atividade": "atividade-02", "titulo": "Modelagem do banco", "descricao": "Definicao das entidades e relacionamentos.", "status": "Em Andamento", "data_entrega": null }
+  ],
+  "documentos": [
+    { "id": 1, "atividade_id": 1, "comunidade_id": null, "nome_arquivo": "contexto-projeto.md", "formato": "md", "caminho_storage": "docs/01_context/project.md", "criado_em": "2026-09-10T09:30:00Z" },
+    { "id": 2, "atividade_id": 2, "comunidade_id": 1, "nome_arquivo": "mapa-aurora.pdf", "formato": "pdf", "caminho_storage": "outputs/mapa-aurora.pdf", "criado_em": "2026-09-10T09:35:00Z" }
+  ]
+}
